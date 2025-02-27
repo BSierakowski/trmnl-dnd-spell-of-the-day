@@ -372,12 +372,12 @@ class DndSpell
       School: #{@school&.dig(:name) || 'Unknown'}
       Casting Time: #{@casting_time}
       Range: #{@range}
-      Components: #{@components.join(', ')}#{@material ? " (#{@material})" : ''}
+      Components: #{@components&.join(', ') || 'None'}#{@material ? " (#{@material})" : ''}
       Duration: #{@duration}#{@concentration ? ' (Concentration)' : ''}
-      Classes: #{@classes.join(', ')}
+      Classes: #{@classes&.join(', ')}
 
       Description:
-      #{@description.join("\n\n")}
+      #{@description&.join("\n\n") || 'No description available.'}
 
       #{@higher_level ? "At Higher Levels:\n#{@higher_level.join("\n")}" : ''}
     SPELL_INFO
@@ -385,9 +385,26 @@ class DndSpell
 end
 
 def parse_spell_response(json_response)
-  spell = DndSpell.new(json_response)
-  puts spell
+  DndSpell.new(json_response)
 end
+
+def get_todays_spell(spells_array)
+  # Get current date components
+  today = Time.now
+  day = today.day
+  month = today.month
+  year = today.year
+
+  # Create a consistent seed based on date (year*10000 + month*100 + day)
+  seed = (year * 10000) + (month * 100) + day
+
+  # Use modulo to get a consistent index for today
+  index = seed % spells_array.length
+
+  # Return the spell for today
+  spells_array[index]
+end
+
 
 def fetch_spell_data(spell_name)
   # Create the full URL
@@ -421,5 +438,8 @@ def fetch_spell_data(spell_name)
   end
 end
 
-spell_data = fetch_spell_data(spells.sample)
-parse_spell_response(spell_data)
+
+todays_spell = get_todays_spell(spells)
+spell_data = fetch_spell_data(todays_spell)
+parsed_info = parse_spell_response(spell_data)
+puts parsed_info
